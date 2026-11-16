@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Situation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app"></main>
+<script src="data-actions.js"></script>
+<script>
+const DATA = window.DATA, S = DATA.status;
+const total = Object.values(S).reduce((a,b)=>a+b,0);
+const seg = (n,c) => `<i style="width:${100*n/total}%;background:${c}"></i>`;
+const tagCls = {urgent:"t-urgent",high:"t-high",norm:"t-norm"};
+const tagTxt = {urgent:"Urgent",high:"Élevé",norm:"Normal"};
+document.getElementById("app").innerHTML = `
+<section class="card">
+  <h2>Situation (${total} échanges suivis)</h2>
+  <div class="counters">
+    <div class="counter c-urgent"><b>${DATA.priority.urgente}</b><span>Urgent</span></div>
+    <div class="counter c-todo"><b>${S.a_traiter}</b><span>À traiter</span></div>
+    <div class="counter c-wait"><b>${S.en_attente}</b><span>En attente</span></div>
+    <div class="counter c-chase"><b>${DATA.relances_a_prevoir}</b><span>Relances à prévoir</span></div>
+  </div>
+  <div class="bar">
+    ${seg(S.a_traiter,"var(--warn)")}${seg(S.en_attente,"var(--wait)")}${seg(S.information,"var(--muted)")}${seg(S.termine,"var(--accent)")}${seg(S.sans_action,"var(--line)")}
+  </div>
+  <div class="legend">
+    <span><em style="background:var(--muted)"></em>Information ${S.information}</span>
+    <span><em style="background:var(--accent)"></em>Terminé ${S.termine}</span>
+    <span><em style="background:var(--line)"></em>Sans action ${S.sans_action}</span>
+  </div>
+  <p class="upd">Données au ${DATA.updated}</p>
+</section>`;
+</script>
+</body>
+</html>

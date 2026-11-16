@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Priorités du jour</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app"></main>
+<script src="data-actions.js"></script>
+<script>
+const DATA = window.DATA, S = DATA.status;
+const total = Object.values(S).reduce((a,b)=>a+b,0);
+const seg = (n,c) => `<i style="width:${100*n/total}%;background:${c}"></i>`;
+const tagCls = {urgent:"t-urgent",high:"t-high",norm:"t-norm"};
+const tagTxt = {urgent:"Urgent",high:"Élevé",norm:"Normal"};
+document.getElementById("app").innerHTML = `
+<section class="card">
+  <h2>Priorités du jour</h2>
+  <ul>${DATA.priorites_du_jour.map(p =>
+    `<li><span>${p.label}</span><span class="tag ${tagCls[p.level]}">${tagTxt[p.level]}</span></li>`).join("")}
+  </ul>
+  <p class="upd">Données au ${DATA.updated}</p>
+</section>`;
+</script>
+</body>
+</html>
