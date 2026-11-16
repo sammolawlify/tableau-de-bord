@@ -16,16 +16,12 @@ const fmtH = n => String(n).replace(".", ",") + " h";
 const total = D.semaine.reduce((a,d)=>a+d.h,0);
 const max = Math.max(...D.semaine.map(d=>d.h));
 const todayIdx = (new Date().getDay() + 6) % 7;   // lundi = 0
-const na = '<span class="na">non disponible</span>';
 document.getElementById("app").innerHTML = `
 <section class="card">
-  <h2>Charge de la semaine</h2>
+  <h2>Charge de la semaine (${fmtH(total)})</h2>
   <div class="days">${D.semaine.map((d,i)=>
     `<div class="day ${i===todayIdx?'today':''}"><b>${fmtH(d.h)}</b><i style="height:${Math.round(100*d.h/max*0.6)}%"></i>${d.jour}</div>`).join("")}
   </div>
-  <div class="row"><span>Aujourd'hui</span><b>${fmtH(D.aujourdhui_h)}</b></div>
-  <div class="row"><span>Cette semaine</span><b>${fmtH(total)}</b></div>
-  <div class="row"><span>Capacité du mois</span><b>${D.capacite_mois ?? na}</b></div>
   <p class="upd">Données au ${D.updated}</p>
 </section>`;
 </script>
