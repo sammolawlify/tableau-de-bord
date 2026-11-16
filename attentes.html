@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>J'attends</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app"></main>
+<script src="data-attentes.js"></script>
+<script>
+const D = window.DATA_ATTENTES;
+const age = j => j === 0 ? "aujourd'hui" : j + " j";
+const cls = j => j > 7 ? "t-urgent" : j > 3 ? "t-high" : "t-norm";
+document.getElementById("app").innerHTML = `
+<section class="card">
+  <h2>J'attends (${D.items.length})</h2>
+  <ul>${D.items.map(i =>
+    `<li><span>${i.label}</span><span class="tag ${cls(i.jours)}">${age(i.jours)}</span></li>`).join("")}
+  </ul>
+  <p class="upd">Données au ${D.updated}</p>
+</section>`;
+</script>
+</body>
+</html>
