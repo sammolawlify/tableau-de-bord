@@ -10,13 +10,6 @@ window.DATA_PLANNING = {
     { jour: "Jeu", h: 7 },
     { jour: "Ven", h: 9 }
   ],
-  capacite_mois: null,                 // tâche 6 (1er du mois) pas encore exécutée
-  echeances: [
-    { quand: "Mar. 17/11", quoi: "Oraux d'examen (11h–13h30)" },
-    { quand: "Mer. 18/11", quoi: "Remise de dossiers · point sur un paiement échu" },
-    { quand: "Jeu. 19/11", quoi: "2 séances, enchaînement serré à 13h" },
-    { quand: "Ven. 20/11", quoi: "Épreuve le matin · oraux jusqu'à 19h" },
-    { quand: "Lun. 23/11", quoi: "Séance du matin" }
-  ]
+  capacite_mois: null                  // tâche 6 (1er du mois) pas encore exécutée
 };
 /* ==== FIN DES DONNÉES ==== */

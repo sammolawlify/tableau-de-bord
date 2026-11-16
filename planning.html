@@ -26,13 +26,6 @@ document.getElementById("app").innerHTML = `
   <div class="row"><span>Aujourd'hui</span><b>${fmtH(D.aujourdhui_h)}</b></div>
   <div class="row"><span>Cette semaine</span><b>${fmtH(total)}</b></div>
   <div class="row"><span>Capacité du mois</span><b>${D.capacite_mois ?? na}</b></div>
-</section>
-
-<section class="card">
-  <h2>Prochaines échéances</h2>
-  <ul>${D.echeances.map(e =>
-    `<li><span>${e.quoi}</span><span class="tag t-norm">${e.quand}</span></li>`).join("")}
-  </ul>
   <p class="upd">Données au ${D.updated}</p>
 </section>`;
 </script>
