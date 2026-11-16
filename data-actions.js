@@ -5,6 +5,8 @@ window.DATA = {
   updated: "16/11/2026 à 08:20",
   status: { a_traiter: 9, en_attente: 7, information: 5, termine: 3, sans_action: 1 },
   priority: { urgente: 1, elevee: 10, normale: 14 },
+  sans_nouvelle_3j: 5,                 // demandes sans échange depuis plus de 3 jours
+  prochain_point_relance: "Mer. 18/11", // prochain point de relance
   relances_a_prevoir: 3,               // paiements échus à revoir
   priorites_du_jour: [
     { label: "1 contrat à envoyer avec ses pièces", level: "urgent" },

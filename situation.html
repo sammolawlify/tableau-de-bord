@@ -33,6 +33,8 @@ document.getElementById("app").innerHTML = `
     <span><em style="background:var(--accent)"></em>Terminé ${S.termine}</span>
     <span><em style="background:var(--line)"></em>Sans action ${S.sans_action}</span>
   </div>
+  <div class="row"><span>Sans nouvelle depuis plus de 3 jours</span><b>${DATA.sans_nouvelle_3j}</b></div>
+  <div class="row"><span>Prochain point de relance</span><b>${DATA.prochain_point_relance}</b></div>
   <p class="upd">Données au ${DATA.updated}</p>
 </section>`;
 </script>
