@@ -12,19 +12,40 @@
 <script src="data-opportunites-cdi.js"></script>
 <script>
 const D = window.DATA_OPPORTUNITES_CDI;
-const v = n => n === null || n === undefined ? '<span class="na">n/d</span>' : n;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const count = s => D.items.filter(i => i.statut === s).length;
+const tagCls = s => s === "Nouvelle" ? "t-high" : s === "À étudier" ? "t-norm" : "t-norm";
+const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
+const item = i => `
+  <details class="opp">
+    <summary><span class="t">${esc(i.titre)}</span><span class="tag ${tagCls(i.statut)}">${esc(i.statut)}</span></summary>
+    <dl>
+      ${row("Employeur", esc(i.employeur))}
+      ${row("Lieu", esc(i.lieu))}
+      ${row("Contrat", esc(i.contrat))}
+      ${row("Rémunération", esc(i.tarif))}
+      ${row("Publiée le", esc(i.publiee))}
+      ${row("Date limite", esc(i.limite))}
+      ${row("Repérée le", esc(i.repere))}
+      ${row("Annonce", `<a href="${esc(i.lien)}" target="_blank" rel="noopener">Ouvrir l'annonce</a>`)}
+    </dl>
+  </details>`;
 document.getElementById("app").innerHTML = `
 <section class="card">
   <h2>Opportunités CDI</h2>
   <div class="counters">
-    <div class="counter c-todo"><b>${v(D.nouvelles)}</b><span>Nouvelles</span></div>
-    <div class="counter c-wait"><b>${v(D.a_etudier)}</b><span>À étudier</span></div>
-    <div class="counter c-chase"><b>${v(D.candidatures_en_cours)}</b><span>Candidatures en cours</span></div>
-    <div class="counter c-urgent"><b>${v(D.ecartees)}</b><span>Écartées</span></div>
+    <div class="counter c-todo"><b>${count("Nouvelle")}</b><span>Nouvelles</span></div>
+    <div class="counter c-wait"><b>${count("À étudier")}</b><span>À étudier</span></div>
+    <div class="counter c-chase"><b>${D.candidatures_en_cours}</b><span>Candidatures en cours</span></div>
+    <div class="counter c-urgent"><b>${D.ecartees.length}</b><span>Écartées</span></div>
   </div>
-  ${D.par_secteur.map(s => `<div class="row"><span>${s.label}</span><b>${s.n}</b></div>`).join("")}
-  <div class="row"><span>Dernière recherche</span><b>${D.derniere_recherche}</b></div>
-  <p class="upd">Données au ${D.updated}</p>
+  <div class="sub">Offres (${D.items.length})</div>
+  ${D.items.length ? D.items.map(item).join("") : '<div class="gone">Aucune offre vérifiée pour le moment.</div>'}
+  <details class="opp">
+    <summary><span class="t">Écartées (${D.ecartees.length})</span></summary>
+    <dl>${D.ecartees.map(e => row(esc(e.label), esc(e.motif))).join("")}</dl>
+  </details>
+  <p class="upd">Dernière recherche ${esc(D.derniere_recherche)} · Données au ${esc(D.updated)}</p>
 </section>`;
 </script>
 </body>
