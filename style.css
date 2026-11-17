@@ -57,3 +57,8 @@
   .day.today i{background:var(--accent-soft);border-color:var(--accent)}
   .day b{font-size:12px;color:var(--ink);font-weight:600}
   .na{color:var(--muted);font-style:italic}
+  ul.veille li{display:block}
+  ul.veille a{color:var(--ink);text-decoration:none;font-weight:550;display:block}
+  ul.veille a:hover{text-decoration:underline}
+  ul.veille small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--urgent);margin-right:6px}
