@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Recherche de missions</title>
+<title>Opportunités formation</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,13 +15,14 @@ const D = window.DATA_OPPORTUNITES;
 const v = n => n === null || n === undefined ? '<span class="na">n/d</span>' : n;
 document.getElementById("app").innerHTML = `
 <section class="card">
-  <h2>Recherche de missions</h2>
+  <h2>Opportunités formation</h2>
   <div class="counters">
-    <div class="counter c-todo"><b>${v(D.opportunites_verifiees)}</b><span>Opportunités vérifiées</span></div>
-    <div class="counter c-wait"><b>${v(D.candidatures_en_cours)}</b><span>Candidatures en cours</span></div>
-    <div class="counter c-chase"><b>${v(D.pistes_a_approcher)}</b><span>Pistes à approcher</span></div>
-    <div class="counter c-urgent"><b>${v(D.offres_ecartees)}</b><span>Offres écartées</span></div>
+    <div class="counter c-todo"><b>${v(D.nouvelles)}</b><span>Nouvelles</span></div>
+    <div class="counter c-wait"><b>${v(D.a_etudier)}</b><span>À étudier</span></div>
+    <div class="counter c-chase"><b>${v(D.candidatures_en_cours)}</b><span>Candidatures en cours</span></div>
+    <div class="counter c-urgent"><b>${v(D.ecartees)}</b><span>Écartées</span></div>
   </div>
+  <div class="row"><span>Pistes à approcher</span><b>${v(D.pistes_a_approcher)}</b></div>
   <div class="row"><span>Dernière recherche</span><b>${D.derniere_recherche}</b></div>
   <p class="upd">Données au ${D.updated}</p>
 </section>`;

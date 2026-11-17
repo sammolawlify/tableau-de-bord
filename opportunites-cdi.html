@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Opportunités CDI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app"></main>
+<script src="data-opportunites-cdi.js"></script>
+<script>
+const D = window.DATA_OPPORTUNITES_CDI;
+const v = n => n === null || n === undefined ? '<span class="na">n/d</span>' : n;
+document.getElementById("app").innerHTML = `
+<section class="card">
+  <h2>Opportunités CDI</h2>
+  <div class="counters">
+    <div class="counter c-todo"><b>${v(D.nouvelles)}</b><span>Nouvelles</span></div>
+    <div class="counter c-wait"><b>${v(D.a_etudier)}</b><span>À étudier</span></div>
+    <div class="counter c-chase"><b>${v(D.candidatures_en_cours)}</b><span>Candidatures en cours</span></div>
+    <div class="counter c-urgent"><b>${v(D.ecartees)}</b><span>Écartées</span></div>
+  </div>
+  ${D.par_secteur.map(s => `<div class="row"><span>${s.label}</span><b>${s.n}</b></div>`).join("")}
+  <div class="row"><span>Dernière recherche</span><b>${D.derniere_recherche}</b></div>
+  <p class="upd">Données au ${D.updated}</p>
+</section>`;
+</script>
+</body>
+</html>
