@@ -80,3 +80,4 @@
 textarea.consigne{width:100%;box-sizing:border-box;min-height:5.5em;padding:.5em;border:1px solid var(--line,#ccc);border-radius:6px;background:transparent;color:inherit;font:inherit;resize:none}
 button.envoi{margin-top:.5em;width:100%;padding:.5em;border:0;border-radius:6px;background:var(--accent,#2f6f5e);color:var(--card);font:inherit;cursor:pointer}
 button.envoi:disabled{opacity:.5;cursor:default}
+.day.alert i{background:var(--warn-soft);border-color:var(--warn)}
