@@ -4,26 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Charge et planning</title>
+<title>Charge de la semaine</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main id="app"></main>
+<script src="app.js"></script>
 <script src="data-planning.js"></script>
 <script>
 const D = window.DATA_PLANNING;
-const fmtH = n => String(n).replace(".", ",") + " h";
 const total = D.semaine.reduce((a,d)=>a+d.h,0);
 const max = Math.max(...D.semaine.map(d=>d.h));
 const todayIdx = (new Date().getDay() + 6) % 7;   // lundi = 0
-document.getElementById("app").innerHTML = `
+mount(`
 <section class="card">
   <h2>Charge de la semaine (${fmtH(total)})</h2>
   <div class="days">${D.semaine.map((d,i)=>
     `<div class="day ${i===todayIdx?'today':''}"><b>${fmtH(d.h)}</b><i style="height:${Math.round(100*d.h/max*0.6)}%"></i>${d.jour}</div>`).join("")}
   </div>
-  <p class="upd">Données au ${D.updated}</p>
-</section>`;
+  ${upd(D.updated)}
+</section>`);
 </script>
 </body>
 </html>

@@ -83,3 +83,4 @@ a.envoi{display:block;box-sizing:border-box;margin-top:.5em;width:100%;padding:.
 a.alt{display:block;margin-top:.4em;font-size:.85em;text-align:center;color:inherit}
 a.off{opacity:.5;pointer-events:none}
 .day.alert i{background:var(--warn-soft);border-color:var(--warn)}
+.upd.stale{color:var(--warn);font-weight:600}

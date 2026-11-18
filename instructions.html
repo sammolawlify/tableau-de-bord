@@ -18,7 +18,7 @@
 </section>
 </main>
 <script>
-const TO = "said.basaid.pro@gmail.com";
+const TO = ["said.basaid.pro", "gmail.com"].join("@");   // adresse assemblée ici pour ne pas figurer en clair dans le code
 const t = document.getElementById("t"), b = document.getElementById("b"), m = document.getElementById("m");
 function maj(){
   const txt = t.value.trim();

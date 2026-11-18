@@ -9,11 +9,11 @@
 </head>
 <body>
 <main id="app"></main>
+<script src="app.js"></script>
 <script src="data-veille.js"></script>
 <script>
 const D = window.DATA_VEILLE;
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-document.getElementById("app").innerHTML = `
+mount(`
 <section class="card">
   <h2>Veille métier (${Math.min(D.items.length,5)})</h2>
   <ul class="veille">${D.items.slice(0,5).map(i => `
@@ -22,8 +22,8 @@ document.getElementById("app").innerHTML = `
       <small>${esc(i.theme)} · ${esc(i.date)}${i.note ? " · " + esc(i.note) : ""}</small>
     </li>`).join("")}
   </ul>
-  <p class="upd">Données au ${esc(D.updated)}</p>
-</section>`;
+  ${upd(D.updated, 130)}
+</section>`);
 </script>
 </body>
 </html>

@@ -9,21 +9,18 @@
 </head>
 <body>
 <main id="app"></main>
+<script src="app.js"></script>
 <script src="data-actions.js"></script>
 <script>
-const DATA = window.DATA, S = DATA.status;
-const total = Object.values(S).reduce((a,b)=>a+b,0);
-const seg = (n,c) => `<i style="width:${100*n/total}%;background:${c}"></i>`;
-const tagCls = {urgent:"t-urgent",high:"t-high",norm:"t-norm"};
-const tagTxt = {urgent:"Urgent",high:"Élevé",norm:"Normal"};
-document.getElementById("app").innerHTML = `
+const DATA = window.DATA;
+mount(`
 <section class="card">
   <h2>Priorités du jour</h2>
   <ul>${DATA.priorites_du_jour.map(p =>
-    `<li><span>${p.label}</span><span class="tag ${tagCls[p.level]}">${tagTxt[p.level]}</span></li>`).join("")}
+    `<li><span>${esc(p.label)}</span><span class="tag ${tagCls[p.level]}">${tagTxt[p.level]}</span></li>`).join("")}
   </ul>
-  <p class="upd">Données au ${DATA.updated}</p>
-</section>`;
+  ${upd(DATA.updated)}
+</section>`);
 </script>
 </body>
 </html>

@@ -9,14 +9,13 @@
 </head>
 <body>
 <main id="app"></main>
+<script src="app.js"></script>
 <script src="data-actions.js"></script>
 <script>
 const DATA = window.DATA, S = DATA.status;
 const total = Object.values(S).reduce((a,b)=>a+b,0);
 const seg = (n,c) => `<i style="width:${100*n/total}%;background:${c}"></i>`;
-const tagCls = {urgent:"t-urgent",high:"t-high",norm:"t-norm"};
-const tagTxt = {urgent:"Urgent",high:"Élevé",norm:"Normal"};
-document.getElementById("app").innerHTML = `
+mount(`
 <section class="card">
   <h2>Situation (${total} échanges suivis)</h2>
   <div class="counters">
@@ -34,9 +33,9 @@ document.getElementById("app").innerHTML = `
     <span><em style="background:var(--line)"></em>Sans action ${S.sans_action}</span>
   </div>
   <div class="row"><span>Sans nouvelle depuis plus de 3 jours</span><b>${DATA.sans_nouvelle_3j}</b></div>
-  <div class="row"><span>Prochain point de relance</span><b>${DATA.prochain_point_relance}</b></div>
-  <p class="upd">Données au ${DATA.updated}</p>
-</section>`;
+  <div class="row"><span>Prochain point de relance</span><b>${esc(DATA.prochain_point_relance)}</b></div>
+  ${upd(DATA.updated)}
+</section>`);
 </script>
 </body>
 </html>

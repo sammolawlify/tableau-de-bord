@@ -9,23 +9,10 @@
 </head>
 <body>
 <main id="app"></main>
+<script src="app.js"></script>
 <script src="data-planning-mois.js"></script>
 <script>
-const D = window.DATA_PLANNING_MOIS;
-const fmtH = n => String(n).replace(".", ",") + " h";
-const total = D.semaines.reduce((a,s)=>a+s.h,0);
-const max = Math.max(...D.semaines.map(s=>s.h));
-const now = new Date(); now.setHours(0,0,0,0);
-const isCur = s => { const d = new Date(s.debut + "T00:00:00"); const e = new Date(d); e.setDate(e.getDate()+7); return now >= d && now < e; };
-const conflit = D.semaines.some(s => s.conflit);
-document.getElementById("app").innerHTML = `
-<section class="card">
-  <h2>Charge de ${D.mois.toLowerCase()} (${fmtH(total)})</h2>
-  <div class="days">${D.semaines.map(s =>
-    `<div class="day ${isCur(s)?'today':''} ${s.conflit?'alert':''}"><b>${fmtH(s.h)}</b><i style="height:${Math.round(100*s.h/max*0.6)}%"></i>${s.label}</div>`).join("")}
-  </div>
-  <p class="upd">${conflit ? D.note_conflit + " · " : ""}Données au ${D.updated}</p>
-</section>`;
+renderMois(window.DATA_PLANNING_MOIS);
 </script>
 </body>
 </html>
