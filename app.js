@@ -73,3 +73,19 @@ function renderOpps(D, titre) {
   ${upd(D.updated, 30, "Dernière recherche " + esc(D.derniere_recherche) + " · ")}
 </section>`);
 }
+
+/* Page « Charge de l'année » : 12 barres mensuelles. */
+function renderAnnee(D) {
+  const total = D.mois.reduce((a, m) => a + m.h, 0), max = Math.max(...D.mois.map(m => m.h));
+  const fmt = n => String(Math.round(n * 10) / 10).replace(".", ",");
+  const confl = D.mois.some(m => m.conflits), part = D.mois.some(m => m.partiel);
+  const notes = [confl ? D.note_conflit : "", part ? D.note_partiel : ""].filter(Boolean).map(esc).join(" · ");
+  mount(`
+<section class="card">
+  <h2>Charge ${esc(D.annee)} (${fmt(total)} h)</h2>
+  <div class="days dense">${D.mois.map(m =>
+    `<div class="day ${m.conflits ? "alert" : ""} ${m.partiel ? "partiel" : ""}"><b>${m.h ? fmt(m.h) : "–"}</b><i style="height:${Math.round(100 * m.h / max * 0.6)}%"></i>${esc(m.label)}</div>`).join("")}
+  </div>
+  ${upd(D.updated, 0, notes ? notes + " · " : "")}
+</section>`);
+}
