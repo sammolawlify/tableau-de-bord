@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>État des instructions</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app"></main>
+<script src="data-instructions.js"></script>
+<script>
+const D = window.DATA_INSTRUCTIONS;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const E = {recu:["Reçue","t-norm"], compris:["Comprise","t-norm"], execute:["Exécutée","t-norm"], a_valider:["À valider","t-high"], impossible:["Impossible","t-urgent"]};
+const items = D.items.slice(0,5);
+document.getElementById("app").innerHTML = `
+<section class="card">
+  <h2>État des instructions</h2>
+  ${items.length ? `<ul class="veille">${items.map(i => { const e = E[i.etat] || E.recu; return `
+    <li><span>${esc(i.label)} <span class="tag ${e[1]}">${e[0]}</span></span>
+    ${i.retour ? `<small>${esc(i.retour)}</small>` : ""}</li>`; }).join("")}</ul>` : `<p class="sub">Aucune instruction en cours.</p>`}
+  <p class="upd">Données au ${esc(D.updated)}</p>
+</section>`;
+</script>
+</body>
+</html>
