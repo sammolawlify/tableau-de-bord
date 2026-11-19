@@ -47,6 +47,19 @@ a{color:var(--blue);text-decoration:none}
 .state i{width:8px;height:8px;border-radius:50%;background:var(--green)}
 .state.warn i{background:var(--orange)} .state.warn{color:var(--orange)}
 
+/* Alerte échéances */
+.alerte{flex:1;min-width:0;display:flex;justify-content:center}
+.alerte button{max-width:100%;display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .95rem;border-radius:99px;
+  background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);font-size:.88rem;font-weight:600;
+  border:1px solid color-mix(in srgb,var(--red) 35%,transparent);animation:puls 2.4s ease-in-out infinite}
+.alerte button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alerte button i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--red)}
+.rows li.due{background:color-mix(in srgb,var(--red) 9%,transparent);border-radius:10px;padding-left:.6rem;padding-right:.6rem;margin:0 -.6rem}
+.rows li.due .t{font-weight:600}
+.rows li.tom .t{font-weight:600}
+@keyframes puls{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--red) 12%,transparent)}}
+@media (max-width:760px){.alerte{display:none}}
+
 /* Grille */
 .grid{flex:1;min-height:0;display:grid;gap:clamp(10px,1.5vh,18px);
   grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
@@ -166,6 +179,7 @@ textarea:focus{border-color:var(--blue)}
 <body>
 <header class="top">
   <div class="hello"><h1 id="hi">Bonjour</h1><p id="date"></p></div>
+  <div class="alerte" id="alerte"></div>
   <div class="tools">
     <span class="state" id="state"><i></i><span>Données à jour</span></span>
     <a class="btn" href="https://mail.google.com/" target="_blank" rel="noopener">Gmail</a>
@@ -255,12 +269,18 @@ function situation() {
 function priorites() {
   const D = W.DATA; if (!D) return null;
   const P = D.priorites_du_jour || [];
-  modals.prio = () => ({title: "Priorités du jour", html: `<ul class="rows">${P.map(p => `
-    <li style="--c:var(--${lvl[p.level][0]})"><span class="dot"></span><span class="t">${esc(p.label)}</span>${tag(lvl[p.level][1], lvl[p.level][0])}</li>`).join("")}</ul>${foot(D.updated)}`});
+  const J = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  const n = new Date(), jr = J[n.getDay()], dm = J[(n.getDay() + 1) % 7];
+  const mot = (l, j) => new RegExp("\\b" + j + "\\b", "i").test(l);
+  const due = p => mot(p.label, jr) ? "due" : mot(p.label, dm) ? "tom" : "";
+  const li = p => { const d = due(p), c = lvl[p.level]; return `
+    <li class="${d}" style="--c:var(--${c[0]})"><span class="dot"></span><span class="t">${esc(p.label)}</span>${d === "due" ? tag("Aujourd'hui", "red") : d === "tom" ? tag("Demain", "orange") : ""}${tag(c[1], c[0])}</li>`; };
+  /* Échéances du jour : en tête de liste et en alerte dans l'en-tête. */
+  const tri = [...P.filter(p => due(p) === "due"), ...P.filter(p => due(p) !== "due")];
+  W.__alertes = P.filter(p => due(p) === "due").map(p => p.label.replace(/\s*\([^)]*\)\s*$/, ""));
+  modals.prio = () => ({title: "Priorités du jour", html: `<ul class="rows">${tri.map(li).join("")}</ul>${foot(D.updated)}`});
   return {id: "prio", cls: "c-prio", title: "Priorités du jour", sub: P.length ? `${P.length}` : "", u: D.updated, maxH: 30, fade: true,
-    body: P.length ? `<ul class="rows">${P.slice(0, 7).map(p => `
-    <li style="--c:var(--${lvl[p.level][0]})"><span class="dot"></span><span class="t">${esc(p.label)}</span>${tag(lvl[p.level][1], lvl[p.level][0])}</li>`).join("")}</ul>`
-      : `<p class="sub">Aucune priorité enregistrée.</p>`};
+    body: P.length ? `<ul class="rows">${tri.slice(0, 7).map(li).join("")}</ul>` : `<p class="sub">Aucune priorité enregistrée.</p>`};
 }
 
 /* ---------- Agenda (aujourd'hui et demain) ---------- */
@@ -419,12 +439,16 @@ $("#carte-charge") && $("#carte-charge").addEventListener("click", e => {
   vue = b.dataset.vue; $("#carte-charge").innerHTML = chargeHtml();
 });
 
+/* ---------- Alerte échéances du jour ---------- */
+(W.__alertes || []).length && ($("#alerte").innerHTML = `<button data-alerte><i></i><span>Échéance aujourd'hui : ${esc(W.__alertes[0])}${W.__alertes.length > 1 ? " (+" + (W.__alertes.length - 1) + ")" : ""}</span></button>`);
+
 /* ---------- Fenêtre de détail ---------- */
 const ov = $("#ov");
 function ouvrir(m, instr) { $("#mt").textContent = m.title; $("#mb").innerHTML = m.html; ov.hidden = false; $("#mb").scrollTop = 0; if (instr) bindInstr(); }
 function fermer() { ov.hidden = true; }
 document.addEventListener("click", e => {
   if (e.target === ov || e.target.closest("#mx")) return fermer();
+  if (e.target.closest("[data-alerte]")) return ouvrir(modals.prio());
   if (e.target.closest("a,button,summary,textarea")) return;
   const c = e.target.closest("[data-open]"); if (c && modals[c.dataset.open]) ouvrir(modals[c.dataset.open]());
 });
