@@ -46,7 +46,7 @@ a{color:var(--blue);text-decoration:none}
 .state.warn i{background:var(--orange)} .state.warn{color:var(--orange)}
 
 /* Alerte échéances */
-.alerte{flex:1;min-width:0;display:flex;justify-content:center}
+.alerte{flex:1;min-width:0;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .alerte button{max-width:100%;display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .95rem;border-radius:99px;
   background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);font-size:.88rem;font-weight:600;
   border:1px solid color-mix(in srgb,var(--red) 35%,transparent);animation:puls 2.4s ease-in-out infinite}
@@ -55,6 +55,8 @@ a{color:var(--blue);text-decoration:none}
 .rows li.due{background:color-mix(in srgb,var(--red) 9%,transparent);border-radius:10px;padding-left:.6rem;padding-right:.6rem;margin:0 -.6rem}
 .rows li.due .t{font-weight:600}
 .rows li.tom .t{font-weight:600}
+.alerte button.amb{background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange);border-color:color-mix(in srgb,var(--orange) 40%,transparent);animation:none}
+.alerte button.amb i{background:var(--orange)}
 @keyframes puls{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--red) 12%,transparent)}}
 @media (max-width:760px){.alerte{display:none}}
 
@@ -119,7 +121,7 @@ a{color:var(--blue);text-decoration:none}
 
 /* Graphique */
 .seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
-.seg button{padding:.18rem .5rem;border-radius:7px;font-size:.78rem;font-weight:550;color:var(--muted)}
+.seg button{padding:.16rem .36rem;border-radius:7px;font-size:.72rem;font-weight:550;color:var(--muted)}
 .seg button.on{background:var(--sheet);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .total{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem;flex:none}
 .total b{font-size:2.1rem;font-weight:600;letter-spacing:-.03em}
@@ -303,7 +305,9 @@ function attentes() {
   modals.att = () => ({title: "J'attends", html: `<ul class="rows">${I.map(i => `
     <li><span class="t">${esc(i.label)}${i.detail ? `<small>${esc(i.detail)}</small>` : ""}</span>${tag(ageTxt(i.jours), ageCls(i.jours))}</li>`).join("")}</ul>${foot(D.updated)}`});
   reg("J'attends", D.updated);
-  return {id: "att", cls: "c-att", title: "J'attends", sub: `${I.length}`, u: D.updated, maxH: 30, fade: true,
+  const retard = I.filter(i => i.jours > 7).length;
+  W.__retards = retard;
+  return {id: "att", cls: "c-att", title: "J'attends", sub: `${I.length}` + (retard ? ` <span class="pill red">${retard} en retard</span>` : ""), u: D.updated, maxH: 30, fade: true,
     body: I.length ? `<ul class="rows compact">${I.map(i => `
     <li><span class="t">${esc(i.label)}</span>${tag(ageTxt(i.jours), ageCls(i.jours))}</li>`).join("")}</ul>` : `<p class="sub">Rien en attente.</p>`};
 }
@@ -368,6 +372,13 @@ function vues() {
   const ti = (new Date().getDay() + 6) % 7;
   if (W.DATA_PLANNING) V.semaine = {lib: "Semaine", u: W.DATA_PLANNING.updated, maxH: 30, titre: "Cette semaine",
     bars: W.DATA_PLANNING.semaine.map((d, i) => ({l: d.jour, h: d.h, cur: i === ti}))};
+  const sv = W.DATA_PLANNING && W.DATA_PLANNING.suivante;
+  const lundi = new Date(now); lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+  if (sv && new Date(sv.debut + "T00:00:00") > lundi) {
+    const d0 = new Date(sv.debut + "T00:00:00");
+    V.suivante = {lib: "S+1", u: W.DATA_PLANNING.updated, maxH: 30, titre: "Semaine du " + String(d0.getDate()).padStart(2, "0") + "/" + String(d0.getMonth() + 1).padStart(2, "0"),
+      bars: sv.semaine.map(d => ({l: d.jour, h: d.h}))};
+  }
   const mois = (D, k) => {
     const isCur = s => { const d = new Date(s.debut + "T00:00:00"), e = new Date(d); e.setDate(e.getDate() + 7); return now >= d && now < e; };
     V[k] = {lib: D.mois.slice(0, 3) + ".", u: D.updated, maxH: 120, titre: D.mois, note: D.semaines.some(s => s.conflit) ? D.note_conflit : "",
@@ -384,6 +395,8 @@ function vues() {
 function charge() {
   const V = vues(), ks = Object.keys(V); if (!ks.length) return null;
   Object.keys(V).forEach(k => reg("Charge · " + V[k].lib, V[k].u, V[k].maxH));
+  const n = new Date(), fin = n.getDay() === 0 || n.getDay() === 6 || (n.getDay() === 5 && n.getHours() >= 17);
+  if (fin && V.suivante) vue = "suivante";
   return {id: "charge", cls: "c-charge", custom: true};
 }
 function chargeHtml() {
@@ -424,7 +437,9 @@ $("#carte-charge") && $("#carte-charge").addEventListener("click", e => {
 });
 
 /* ---------- Alerte échéances du jour ---------- */
-(W.__alertes || []).length && ($("#alerte").innerHTML = `<button data-alerte><i></i><span>Échéance aujourd'hui : ${esc(W.__alertes[0])}${W.__alertes.length > 1 ? " (+" + (W.__alertes.length - 1) + ")" : ""}</span></button>`);
+$("#alerte").innerHTML =
+  ((W.__alertes || []).length ? `<button data-alerte><i></i><span>Échéance aujourd'hui : ${esc(W.__alertes[0])}${W.__alertes.length > 1 ? " (+" + (W.__alertes.length - 1) + ")" : ""}</span></button>` : "") +
+  (W.__retards ? `<button data-retard class="amb"><i></i><span>${W.__retards} attente${W.__retards > 1 ? "s" : ""} de plus de 7 jours</span></button>` : "");
 
 $("#carte-opp") && $("#carte-opp").addEventListener("click", e => {
   const b = e.target.closest("[data-ovue]"); if (!b) return;
@@ -439,6 +454,7 @@ document.addEventListener("click", e => {
   if (e.target === ov || e.target.closest("#mx")) return fermer();
   if (e.target.closest("[data-ecart]")) { ouvrir(modals.opp(true)); const x = $("#ec"); x && x.scrollIntoView({block: "start"}); return; }
   if (e.target.closest("[data-alerte]")) return ouvrir(modals.prio());
+  if (e.target.closest("[data-retard]")) return ouvrir(modals.att());
   if (e.target.closest("a,button,summary")) return;
   const c = e.target.closest("[data-open]"); if (c && modals[c.dataset.open]) ouvrir(modals[c.dataset.open]());
 });
