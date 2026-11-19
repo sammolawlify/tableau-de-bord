@@ -40,8 +40,6 @@ a{color:var(--blue);text-decoration:none}
   border:1px solid var(--line);box-shadow:var(--shadow);font-size:.88rem;font-weight:550;color:var(--ink);
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:transform .15s}
 .btn:hover{transform:translateY(-1px)}
-.btn.main{background:var(--blue);color:#fff;border-color:transparent}
-.badge{background:var(--orange);color:#fff;border-radius:99px;font-size:.7rem;padding:0 .4rem;font-weight:700}
 .clock{font-size:1.7rem;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-left:6px}
 .state{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted)}
 .state i{width:8px;height:8px;border-radius:50%;background:var(--green)}
@@ -85,6 +83,11 @@ a{color:var(--blue);text-decoration:none}
 .tile{--c:var(--blue);border-radius:14px;padding:.5rem .75rem;background:color-mix(in srgb,var(--c) 13%,transparent)}
 .tile b{display:block;font-size:1.9rem;line-height:1.1;font-weight:600;letter-spacing:-.03em;color:var(--c)}
 .tile span{font-size:.76rem;color:var(--ink);opacity:.75}
+.tiles.four{grid-template-columns:repeat(4,1fr);gap:6px}
+.tiles.four .tile{padding:.45rem .45rem}
+.tiles.four .tile b{font-size:1.5rem}
+.tiles.four .tile span{font-size:.62rem;white-space:nowrap}
+.tile.gray{--c:var(--gray);cursor:pointer}
 .tiles.three{grid-template-columns:repeat(3,1fr)}
 .tiles.three .tile b{font-size:1.6rem}
 .stack{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--fill);margin:.8rem 0 .55rem}
@@ -151,16 +154,13 @@ a{color:var(--blue);text-decoration:none}
 .sheet details{border-top:1px solid var(--line)}
 .sheet summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;padding:.6rem 0}
 .sheet summary::-webkit-details-marker{display:none}
+.sheet summary::before{content:"›";color:var(--muted);font-weight:700;transition:transform .15s}
+.sheet details[open] > summary::before{transform:rotate(90deg)}
+.sheet summary .t{flex:1}
 .sheet dl{margin:0 0 .6rem;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:.88rem}
 .sheet dt{color:var(--muted)}.sheet dd{margin:0}
 .sheet .foot{margin-top:.9rem;font-size:.74rem;color:var(--muted);text-align:right}
 .sheet .foot.stale{color:var(--orange);font-weight:600}
-textarea{width:100%;min-height:120px;resize:vertical;border:1px solid var(--line);border-radius:14px;padding:.8rem;
-  background:var(--fill);color:var(--ink);font:inherit;outline:none}
-textarea:focus{border-color:var(--blue)}
-.send{display:inline-block;margin:.7rem .6rem 0 0;padding:.55rem 1.1rem;border-radius:99px;background:var(--blue);color:#fff;font-weight:600}
-.alt{display:inline-block;margin-top:.7rem;font-size:.85rem}
-.off{opacity:.45;pointer-events:none}
 @keyframes fi{from{opacity:0}}
 @keyframes pop{from{opacity:0;transform:scale(.94) translateY(8px)}}
 
@@ -184,7 +184,6 @@ textarea:focus{border-color:var(--blue)}
     <span class="state" id="state"><i></i><span>Données à jour</span></span>
     <a class="btn" href="https://mail.google.com/" target="_blank" rel="noopener">Gmail</a>
     <a class="btn" href="https://calendar.google.com/" target="_blank" rel="noopener">Agenda</a>
-    <button class="btn main" id="bi">Instruction à Claude <span class="badge" id="bb" hidden></span></button>
     <span class="clock" id="clock"></span>
   </div>
 </header>
@@ -202,7 +201,6 @@ textarea:focus{border-color:var(--blue)}
 <script src="data-opportunites.js"></script>
 <script src="data-opportunites-cdi.js"></script>
 <script src="data-veille.js"></script>
-<script src="data-instructions.js"></script>
 <script>
 (() => {
 const W = window, $ = s => document.querySelector(s);
@@ -213,7 +211,6 @@ const short = u => String(u || "").replace(/\/\d{4}/, "");
 const lvl = {urgent: ["red", "Urgent"], high: ["orange", "Élevé"], norm: ["blue", "Normal"]};
 const ageCls = j => j > 7 ? "red" : j > 3 ? "orange" : "blue";
 const ageTxt = j => j === 0 ? "aujourd'hui" : j + " j";
-const ETAT = {recu: ["Reçue", "blue"], compris: ["Comprise", "blue"], execute: ["Exécutée", "green"], a_valider: ["À valider", "orange"], impossible: ["Impossible", "red"]};
 const sources = [];   // fraîcheur : { nom, u, maxH }
 
 function isStale(u, maxH) { const a = maxH ? ageOuvre(u) : null; return a !== null && a > maxH; }
@@ -311,34 +308,46 @@ function attentes() {
     <li><span class="t">${esc(i.label)}</span>${tag(ageTxt(i.jours), ageCls(i.jours))}</li>`).join("")}</ul>` : `<p class="sub">Rien en attente.</p>`};
 }
 
-/* ---------- Opportunités ---------- */
+/* ---------- Opportunités (Formation / CDI) ---------- */
+let oppVue = "formation";
+const oppSrc = () => ({formation: W.DATA_OPPORTUNITES, cdi: W.DATA_OPPORTUNITES_CDI});
 function opportunites() {
-  const F = W.DATA_OPPORTUNITES, C = W.DATA_OPPORTUNITES_CDI;
-  if (!F && !C) return null;
-  const items = [...(F ? F.items.map(i => ({...i, _t: "Formation"})) : []), ...(C ? C.items.map(i => ({...i, _t: "CDI"})) : [])];
-  const nb = s => items.filter(i => i.statut === s).length;
-  const cand = ((F && F.candidatures_en_cours) || 0) + ((C && C.candidatures_en_cours) || 0);
-  if (F) reg("Opportunités formation", F.updated);
-  if (C) reg("Opportunités CDI", C.updated);
+  const S = oppSrc(); if (!S.formation && !S.cdi) return null;
+  if (S.formation) reg("Opportunités formation", S.formation.updated);
+  if (S.cdi) reg("Opportunités CDI", S.cdi.updated);
   const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
-  const bloc = (D, titre) => !D ? "" : `<h4>${titre} (${D.items.length})</h4>` +
+  modals.opp = (ecart) => { const D = oppSrc()[oppVue]; if (!D) return {title: "Opportunités", html: "<p class='sub'>Aucune donnée.</p>"};
+    const E = D.ecartees || [];
+    return {title: "Opportunités · " + (oppVue === "cdi" ? "CDI" : "Formation"), html: `
+    <h4>Offres (${D.items.length})</h4>` +
     (D.items.length ? D.items.map(i => `
     <details><summary><span class="t">${esc(i.titre)}</span>${tag(i.statut, i.statut === "Nouvelle" ? "orange" : "blue")}</summary>
       <dl>${row("Employeur", esc(i.employeur))}${row("Lieu", esc(i.lieu))}${row("Contrat", esc(i.contrat))}${row("Rémunération", esc(i.tarif))}
       ${row("Publiée le", esc(i.publiee))}${row("Date limite", esc(i.limite))}${row("Repérée le", esc(i.repere))}
       ${row("Annonce", `<a href="${esc(i.lien)}" target="_blank" rel="noopener">Ouvrir l'annonce</a>`)}</dl></details>`).join("") : `<p class="sub">Aucune offre vérifiée.</p>`) +
-    ((D.ecartees && D.ecartees.length) ? `<details><summary><span class="t">Écartées (${D.ecartees.length})</span></summary><dl>${D.ecartees.map(e => row(esc(e.label), esc(e.motif))).join("")}</dl></details>` : "") +
-    `<div class="foot">Dernière recherche ${esc(D.derniere_recherche)} · données au ${esc(D.updated)}</div>`;
-  modals.opp = () => ({title: "Opportunités", html: bloc(F, "Formation") + bloc(C, "CDI")});
-  const top = [...items].sort((a, b) => (b.statut === "Nouvelle") - (a.statut === "Nouvelle")).slice(0, 3);
-  const old = [F, C].filter(Boolean).map(d => d.updated).find(u => isStale(u, 30)) || (F || C).updated;
-  return {id: "opp", cls: "c-opp", title: "Opportunités", sub: `${items.length} offres`, u: old, maxH: 30, fade: true, body: `
-    <div class="tiles three">
+    `<h4 id="ec">Écartées (${E.length})</h4>` +
+    (E.length ? `<ul class="rows">${E.map(e => `<li><span class="t">${esc(e.label)}<small>${esc(e.motif)}</small></span></li>`).join("")}</ul>` : `<p class="sub">Aucune offre écartée.</p>`) +
+    `<div class="foot">Dernière recherche ${esc(D.derniere_recherche)} · données au ${esc(D.updated)}</div>`}; };
+  return {id: "opp", cls: "c-opp", custom: "opp"};
+}
+function oppHtml() {
+  const S = oppSrc(), ks = ["formation", "cdi"].filter(k => S[k]);
+  if (!S[oppVue]) oppVue = ks[0];
+  const D = S[oppVue], I = D.items, E = D.ecartees || [];
+  const nb = s => I.filter(i => i.statut === s).length;
+  const top = [...I].sort((a, b) => (b.statut === "Nouvelle") - (a.statut === "Nouvelle")).slice(0, 3);
+  const lib = {formation: "Formation", cdi: "CDI"};
+  return `
+  <div class="ch"><h2>Opportunités</h2><div class="seg">${ks.map(k => `<button data-ovue="${k}" class="${k === oppVue ? "on" : ""}">${lib[k]}</button>`).join("")}</div></div>
+  <div class="cb fade">
+    <div class="tiles four">
       <div class="tile orange"><b>${nb("Nouvelle")}</b><span>Nouvelles</span></div>
       <div class="tile blue"><b>${nb("À étudier")}</b><span>À étudier</span></div>
-      <div class="tile green"><b>${cand}</b><span>Candidat.</span></div>
+      <div class="tile green"><b>${D.candidatures_en_cours || 0}</b><span>Candidat.</span></div>
+      <div class="tile gray" data-ecart role="button" tabindex="0"><b>${E.length}</b><span>Écartées ›</span></div>
     </div>
-    <ul class="rows compact" style="margin-top:.6rem">${top.map(i => `<li><span class="t">${esc(i.titre)}<small>${esc(i.employeur)} · ${i._t}</small></span></li>`).join("")}</ul>`};
+    <ul class="rows compact" style="margin-top:.6rem">${top.length ? top.map(i => `<li><span class="t">${esc(i.titre)}<small>${esc(i.employeur)}</small></span></li>`).join("") : `<li><span class="t sub">Aucune offre vérifiée.</span></li>`}</ul>
+  </div>${fresh(D.updated, 30)}`;
 }
 
 /* ---------- Veille ---------- */
@@ -393,32 +402,6 @@ function chargeHtml() {
   </div>${fresh(v.u, v.maxH)}`;
 }
 
-/* ---------- Instructions ---------- */
-function instrModal() {
-  const D = W.DATA_INSTRUCTIONS || {items: [], updated: ""};
-  const I = (D.items || []).slice(0, 5);
-  return {title: "Instruction pour Claude", html: `
-    <textarea id="t" placeholder="Ex. : ne plus signaler tel e-mail…"></textarea>
-    <a id="b" class="send off" href="#" target="_blank" rel="noopener">Préparer l'e-mail</a>
-    <a id="m" class="alt off" href="#">Ou avec l'application de messagerie</a>
-    <p class="sub" style="margin:.7rem 0 0">Gmail s'ouvre pré-rempli : il reste à cliquer sur Envoyer.</p>
-    <h4>État des instructions</h4>
-    ${I.length ? `<ul class="rows">${I.map(i => { const e = ETAT[i.etat] || ETAT.recu; return `<li><span class="t">${esc(i.label)}${i.retour ? `<small>${esc(i.retour)}</small>` : ""}</span>${tag(e[0], e[1])}</li>`; }).join("")}</ul>` : `<p class="sub">Aucune instruction en cours.</p>`}
-    ${foot(D.updated, 0)}`};
-}
-function bindInstr() {
-  const TO = ["said.basaid.pro", "gmail.com"].join("@");   // adresse assemblée ici pour ne pas figurer en clair dans le code
-  const t = $("#t"), b = $("#b"), m = $("#m");
-  const maj = () => {
-    const txt = t.value.trim(), d = new Date().toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"});
-    const su = encodeURIComponent("[CLAUDE] consigne du " + d), body = encodeURIComponent(txt);
-    b.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(TO) + "&su=" + su + "&body=" + body;
-    m.href = "mailto:" + TO + "?subject=" + su + "&body=" + body;
-    b.classList.toggle("off", !txt); m.classList.toggle("off", !txt);
-  };
-  t.addEventListener("input", maj); maj(); t.focus();
-}
-
 /* ---------- Assemblage ---------- */
 const grid = $("#grid");
 [situation, priorites, agenda, attentes, charge, opportunites, veille].forEach(fn => {
@@ -427,7 +410,8 @@ const grid = $("#grid");
   if (!m) return;
   const sec = document.createElement("section");
   sec.className = "card " + m.cls;
-  if (m.custom) { sec.id = "carte-charge"; sec.innerHTML = chargeHtml(); }
+  if (m.custom === "opp") { sec.id = "carte-opp"; sec.dataset.open = "opp"; sec.tabIndex = 0; sec.setAttribute("role", "button"); sec.innerHTML = oppHtml(); }
+  else if (m.custom) { sec.id = "carte-charge"; sec.innerHTML = chargeHtml(); }
   else {
     if (modals[m.id]) { sec.dataset.open = m.id; sec.tabIndex = 0; sec.setAttribute("role", "button"); }
     sec.innerHTML = `<div class="ch"><h2>${m.title}</h2>${m.sub ? `<span class="sub">${m.sub}</span>` : ""}</div><div class="cb${m.fade ? " fade" : ""}">${m.body}</div>${fresh(m.u, m.maxH)}`;
@@ -442,23 +426,26 @@ $("#carte-charge") && $("#carte-charge").addEventListener("click", e => {
 /* ---------- Alerte échéances du jour ---------- */
 (W.__alertes || []).length && ($("#alerte").innerHTML = `<button data-alerte><i></i><span>Échéance aujourd'hui : ${esc(W.__alertes[0])}${W.__alertes.length > 1 ? " (+" + (W.__alertes.length - 1) + ")" : ""}</span></button>`);
 
+$("#carte-opp") && $("#carte-opp").addEventListener("click", e => {
+  const b = e.target.closest("[data-ovue]"); if (!b) return;
+  e.stopPropagation(); oppVue = b.dataset.ovue; $("#carte-opp").innerHTML = oppHtml();
+});
+
 /* ---------- Fenêtre de détail ---------- */
 const ov = $("#ov");
-function ouvrir(m, instr) { $("#mt").textContent = m.title; $("#mb").innerHTML = m.html; ov.hidden = false; $("#mb").scrollTop = 0; if (instr) bindInstr(); }
+function ouvrir(m) { $("#mt").textContent = m.title; $("#mb").innerHTML = m.html; ov.hidden = false; $("#mb").scrollTop = 0; }
 function fermer() { ov.hidden = true; }
 document.addEventListener("click", e => {
   if (e.target === ov || e.target.closest("#mx")) return fermer();
+  if (e.target.closest("[data-ecart]")) { ouvrir(modals.opp(true)); const x = $("#ec"); x && x.scrollIntoView({block: "start"}); return; }
   if (e.target.closest("[data-alerte]")) return ouvrir(modals.prio());
-  if (e.target.closest("a,button,summary,textarea")) return;
+  if (e.target.closest("a,button,summary")) return;
   const c = e.target.closest("[data-open]"); if (c && modals[c.dataset.open]) ouvrir(modals[c.dataset.open]());
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") fermer();
   if ((e.key === "Enter" || e.key === " ") && document.activeElement && document.activeElement.dataset && document.activeElement.dataset.open) { e.preventDefault(); ouvrir(modals[document.activeElement.dataset.open]()); }
 });
-$("#bi").addEventListener("click", () => ouvrir(instrModal(), true));
-const nbv = ((W.DATA_INSTRUCTIONS && W.DATA_INSTRUCTIONS.items) || []).filter(i => i.etat === "a_valider").length;
-if (nbv) { $("#bb").hidden = false; $("#bb").textContent = nbv; }
 
 /* ---------- En-tête : salutation, date, heure, état des données ---------- */
 function tick() {
