@@ -49,7 +49,7 @@ a{color:var(--blue);text-decoration:none}
 
 /* Grille */
 .grid{flex:1;min-height:0;display:grid;gap:clamp(10px,1.5vh,18px);
-  grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+  grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
 .card{min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:clamp(12px,1.9vh,22px) clamp(14px,1.4vw,22px);
   background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
   -webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);
@@ -57,10 +57,10 @@ a{color:var(--blue);text-decoration:none}
 .card[data-open]{cursor:pointer}
 .card[data-open]:hover{transform:translateY(-3px);box-shadow:0 1px 1px rgba(0,0,0,.03),0 18px 40px rgba(0,0,0,.12)}
 .card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.c-situation{grid-column:1}.c-prio{grid-column:2/4}.c-att{grid-column:4}
-.c-charge{grid-column:1/3}.c-opp{grid-column:3}.c-veille{grid-column:4}
+.c-situation{grid-column:span 3}.c-prio{grid-column:span 5}.c-agenda{grid-column:span 4}
+.c-att,.c-charge,.c-opp,.c-veille{grid-column:span 3}
 .ch{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:.7rem;flex:none}
-.ch h2{margin:0;font-size:1.05rem;font-weight:650;letter-spacing:-.01em}
+.ch h2{white-space:nowrap;margin:0;font-size:1.05rem;font-weight:650;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:.8rem}
 .cb{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .fade{-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)}
@@ -92,9 +92,18 @@ a{color:var(--blue);text-decoration:none}
 .rows.compact a:hover{text-decoration:underline}
 .red{--c:var(--red)}.orange{--c:var(--orange)}.blue{--c:var(--blue)}.green{--c:var(--green)}
 
+/* Agenda */
+.cb h4.ag{margin:.1rem 0 .25rem;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
+.cb h4.ag + .rows,.cb h4.ag + p{margin-bottom:.7rem}
+.cb h4.ag span{text-transform:none;letter-spacing:0;font-weight:500;margin-left:.3rem}
+.rows.ag li{padding:.4rem 0;font-size:.92rem}
+.rows.ag b{flex:none;font-weight:600;font-variant-numeric:tabular-nums;min-width:6.4em;color:var(--muted)}
+.rows.ag li.live b{color:var(--green)}
+.rows.ag li.live .t{font-weight:600}
+
 /* Graphique */
 .seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
-.seg button{padding:.18rem .65rem;border-radius:7px;font-size:.78rem;font-weight:550;color:var(--muted)}
+.seg button{padding:.18rem .5rem;border-radius:7px;font-size:.78rem;font-weight:550;color:var(--muted)}
 .seg button.on{background:var(--sheet);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .total{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem;flex:none}
 .total b{font-size:2.1rem;font-weight:600;letter-spacing:-.03em}
@@ -147,7 +156,7 @@ textarea:focus{border-color:var(--blue)}
   body{height:auto;min-height:100vh;overflow:auto}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}
   .card{min-height:260px}
-  .c-situation,.c-prio,.c-att,.c-charge,.c-opp,.c-veille{grid-column:auto}
+  .c-situation,.c-prio,.c-agenda,.c-att,.c-charge,.c-opp,.c-veille{grid-column:auto}
   .c-prio,.c-charge{grid-column:1/-1}
   .top{flex-wrap:wrap}
 }
@@ -174,6 +183,7 @@ textarea:focus{border-color:var(--blue)}
 <script src="data-planning-mois.js"></script>
 <script src="data-planning-mois-suivant.js"></script>
 <script src="data-planning-annee.js"></script>
+<script src="data-agenda.js"></script>
 <script src="data-attentes.js"></script>
 <script src="data-opportunites.js"></script>
 <script src="data-opportunites-cdi.js"></script>
@@ -253,6 +263,22 @@ function priorites() {
       : `<p class="sub">Aucune priorité enregistrée.</p>`};
 }
 
+/* ---------- Agenda (aujourd'hui et demain) ---------- */
+function agenda() {
+  const D = W.DATA_AGENDA; if (!D) return null;
+  const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const n = new Date(), t = new Date(n); t.setDate(t.getDate() + 1);
+  const hm = String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
+  const wd = d => d.toLocaleDateString("fr-FR", {weekday: "short", day: "numeric"});
+  const bloc = (lib, d) => {
+    const j = (D.jours || []).find(x => x.date === iso(d));
+    return `<h4 class="ag">${lib}<span>${esc(wd(d))}</span></h4>` + (!j ? `<p class="sub">Non synchronisé.</p>` : !j.events.length ? `<p class="sub">Rien de prévu.</p>` :
+      `<ul class="rows ag">${j.events.map(e => `<li class="${lib === "Aujourd'hui" && e.debut <= hm && hm < e.fin ? "live" : ""}"><b>${esc(e.debut)}–${esc(e.fin)}</b><span class="t">${esc(e.label)}</span></li>`).join("")}</ul>`);
+  };
+  reg("Agenda", D.updated);
+  return {id: "agenda", cls: "c-agenda", title: "Agenda", sub: "aujourd'hui · demain", u: D.updated, maxH: 30, body: bloc("Aujourd'hui", n) + bloc("Demain", t)};
+}
+
 /* ---------- J'attends ---------- */
 function attentes() {
   const D = W.DATA_ATTENTES; if (!D) return null;
@@ -315,7 +341,7 @@ function vues() {
     bars: W.DATA_PLANNING.semaine.map((d, i) => ({l: d.jour, h: d.h, cur: i === ti}))};
   const mois = (D, k) => {
     const isCur = s => { const d = new Date(s.debut + "T00:00:00"), e = new Date(d); e.setDate(e.getDate() + 7); return now >= d && now < e; };
-    V[k] = {lib: D.mois, u: D.updated, maxH: 120, titre: D.mois, note: D.semaines.some(s => s.conflit) ? D.note_conflit : "",
+    V[k] = {lib: D.mois.slice(0, 3) + ".", u: D.updated, maxH: 120, titre: D.mois, note: D.semaines.some(s => s.conflit) ? D.note_conflit : "",
       bars: D.semaines.map(s => ({l: s.label, h: s.h, cur: isCur(s), alert: s.conflit}))};
   };
   if (W.DATA_PLANNING_MOIS) mois(W.DATA_PLANNING_MOIS, "mois");
@@ -335,7 +361,7 @@ function chargeHtml() {
   const V = vues(), ks = Object.keys(V); if (!V[vue]) vue = ks[0];
   const v = V[vue], max = Math.max(...v.bars.map(b => b.h), 1), dense = v.bars.length > 7;
   return `
-  <div class="ch"><h2>Charge de travail</h2><div class="seg">${ks.map(k => `<button data-vue="${k}" class="${k === vue ? "on" : ""}">${esc(V[k].lib)}</button>`).join("")}</div></div>
+  <div class="ch"><h2>Charge</h2><div class="seg">${ks.map(k => `<button data-vue="${k}" class="${k === vue ? "on" : ""}">${esc(V[k].lib)}</button>`).join("")}</div></div>
   <div class="cb">
     <div class="total"><b>${hh(sum(v.bars.map(b => b.h)))}</b><span>${esc(v.titre)}</span></div>
     <div class="bars${dense ? " dense" : ""}">${v.bars.map(b => `
@@ -375,7 +401,7 @@ function bindInstr() {
 
 /* ---------- Assemblage ---------- */
 const grid = $("#grid");
-[situation, priorites, attentes, charge, opportunites, veille].forEach(fn => {
+[situation, priorites, agenda, attentes, charge, opportunites, veille].forEach(fn => {
   let m = null;
   try { m = fn(); } catch (e) { console.error(fn.name, e); }
   if (!m) return;
