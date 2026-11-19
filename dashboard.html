@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>Tableau de bord</title>
+<style>
+:root{
+  --bg1:#f5f5f7; --bg2:#e4e8f3; --card:rgba(255,255,255,.78); --sheet:#ffffff;
+  --ink:#1d1d1f; --muted:#6e6e73; --line:rgba(0,0,0,.08); --fill:rgba(120,120,128,.12);
+  --shadow:0 1px 1px rgba(0,0,0,.03),0 12px 32px rgba(0,0,0,.06);
+  --red:#ff3b30; --orange:#ff9500; --blue:#007aff; --green:#34c759; --gray:#8e8e93;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#000000; --bg2:#17182a; --card:rgba(28,28,30,.72); --sheet:#1c1c1e;
+    --ink:#f5f5f7; --muted:#a1a1a6; --line:rgba(255,255,255,.1); --fill:rgba(120,120,128,.24);
+    --shadow:0 1px 1px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
+    --red:#ff453a; --orange:#ff9f0a; --blue:#0a84ff; --green:#30d158; --gray:#98989d;
+  }
+}
+*{box-sizing:border-box}
+html{font-size:clamp(13px,calc(.55vw + .7vh + 4px),17px)}
+body{margin:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;gap:clamp(10px,1.5vh,18px);
+  padding:clamp(12px,2vh,26px) clamp(14px,2vw,32px);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",system-ui,Roboto,sans-serif;
+  color:var(--ink);background:radial-gradient(1200px 700px at 8% -10%,var(--bg2),transparent 70%),var(--bg1);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:var(--blue);text-decoration:none}
+
+/* En-tête */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none}
+.hello h1{margin:0;font-size:1.7rem;font-weight:650;letter-spacing:-.025em}
+.hello p{margin:.1rem 0 0;color:var(--muted);font-size:.95rem}
+.tools{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .95rem;border-radius:99px;background:var(--card);
+  border:1px solid var(--line);box-shadow:var(--shadow);font-size:.88rem;font-weight:550;color:var(--ink);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:transform .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn.main{background:var(--blue);color:#fff;border-color:transparent}
+.badge{background:var(--orange);color:#fff;border-radius:99px;font-size:.7rem;padding:0 .4rem;font-weight:700}
+.clock{font-size:1.7rem;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-left:6px}
+.state{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted)}
+.state i{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.state.warn i{background:var(--orange)} .state.warn{color:var(--orange)}
+
+/* Grille */
+.grid{flex:1;min-height:0;display:grid;gap:clamp(10px,1.5vh,18px);
+  grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+.card{min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:clamp(12px,1.9vh,22px) clamp(14px,1.4vw,22px);
+  background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);
+  transition:transform .2s,box-shadow .2s;position:relative}
+.card[data-open]{cursor:pointer}
+.card[data-open]:hover{transform:translateY(-3px);box-shadow:0 1px 1px rgba(0,0,0,.03),0 18px 40px rgba(0,0,0,.12)}
+.card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.c-situation{grid-column:1}.c-prio{grid-column:2/4}.c-att{grid-column:4}
+.c-charge{grid-column:1/3}.c-opp{grid-column:3}.c-veille{grid-column:4}
+.ch{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:.7rem;flex:none}
+.ch h2{margin:0;font-size:1.05rem;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.8rem}
+.cb{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.fade{-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)}
+.fresh{flex:none;align-self:flex-end;margin-top:.35rem;font-size:.68rem;color:var(--muted);opacity:.75}
+.fresh.stale{color:var(--orange);opacity:1;font-weight:600}
+
+/* Éléments */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{--c:var(--blue);border-radius:14px;padding:.5rem .75rem;background:color-mix(in srgb,var(--c) 13%,transparent)}
+.tile b{display:block;font-size:1.9rem;line-height:1.1;font-weight:600;letter-spacing:-.03em;color:var(--c)}
+.tile span{font-size:.76rem;color:var(--ink);opacity:.75}
+.tiles.three{grid-template-columns:repeat(3,1fr)}
+.tiles.three .tile b{font-size:1.6rem}
+.stack{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--fill);margin:.8rem 0 .55rem}
+.stack i{display:block;height:100%}
+.line{display:flex;justify-content:space-between;font-size:.82rem;padding:.3rem 0;border-top:1px solid var(--line)}
+.line b{font-weight:600}
+.pill{--c:var(--blue);align-self:center;font-size:.7rem;padding:.12rem .55rem;border-radius:99px;font-weight:600;white-space:nowrap;
+  background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rows li{display:flex;align-items:center;gap:.7rem;padding:.55rem 0;border-top:1px solid var(--line);font-size:.98rem}
+.rows li:first-child{border-top:0;padding-top:0}
+.rows .dot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--c,var(--blue))}
+.rows .t{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rows small{display:block;color:var(--muted);font-size:.78rem;margin-top:1px}
+.rows.compact li{font-size:.88rem;padding:.45rem 0;align-items:flex-start}
+.rows.compact .t{font-weight:550}
+.rows.compact a{color:var(--ink)}
+.rows.compact a:hover{text-decoration:underline}
+.red{--c:var(--red)}.orange{--c:var(--orange)}.blue{--c:var(--blue)}.green{--c:var(--green)}
+
+/* Graphique */
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
+.seg button{padding:.18rem .65rem;border-radius:7px;font-size:.78rem;font-weight:550;color:var(--muted)}
+.seg button.on{background:var(--sheet);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.total{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem;flex:none}
+.total b{font-size:2.1rem;font-weight:600;letter-spacing:-.03em}
+.total span{font-size:.82rem;color:var(--muted)}
+.bars{flex:1;min-height:0;display:flex;gap:clamp(4px,.7vw,12px);align-items:stretch}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
+.col .v{font-size:.78rem;font-weight:600;margin-bottom:3px;white-space:nowrap}
+.col .track{flex:1;min-height:0;width:100%;max-width:64px;display:flex;flex-direction:column}
+.col .track i{display:block;border-radius:9px 9px 3px 3px;min-height:3px;background:linear-gradient(var(--blue),color-mix(in srgb,var(--blue) 55%,transparent))}
+.col.cur .track i{background:linear-gradient(var(--green),color-mix(in srgb,var(--green) 55%,transparent))}
+.col.alert .track i{background:linear-gradient(var(--orange),color-mix(in srgb,var(--orange) 55%,transparent))}
+.col.partiel .track i{opacity:.45}
+.col .l{font-size:.76rem;color:var(--muted);margin-top:5px}
+.col.cur .l{color:var(--green);font-weight:700}
+.bars.dense .v{font-size:.68rem}
+.note{font-size:.76rem;color:var(--orange);margin-top:.3rem;flex:none}
+
+/* Fenêtre de détail */
+#ov{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:4vh 4vw;
+  background:rgba(0,0,0,.32);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);animation:fi .18s}
+#ov[hidden]{display:none}
+.sheet{width:min(720px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--sheet);color:var(--ink);
+  border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:pop .22s cubic-bezier(.2,.9,.3,1.1);overflow:hidden}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.4rem .6rem}
+.sheet h3{margin:0;font-size:1.35rem;font-weight:650;letter-spacing:-.02em}
+.x{width:30px;height:30px;border-radius:50%;background:var(--fill);color:var(--muted);font-size:1.1rem;line-height:1}
+.sheet .body{padding:.2rem 1.4rem 1.3rem;overflow:auto;font-size:.98rem}
+.sheet h4{margin:1.1rem 0 .3rem;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
+.sheet .rows li{padding:.65rem 0}
+.sheet .rows li .t{-webkit-line-clamp:unset;display:block}
+.sheet .tiles{margin-bottom:.4rem}
+.sheet details{border-top:1px solid var(--line)}
+.sheet summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;padding:.6rem 0}
+.sheet summary::-webkit-details-marker{display:none}
+.sheet dl{margin:0 0 .6rem;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:.88rem}
+.sheet dt{color:var(--muted)}.sheet dd{margin:0}
+.sheet .foot{margin-top:.9rem;font-size:.74rem;color:var(--muted);text-align:right}
+.sheet .foot.stale{color:var(--orange);font-weight:600}
+textarea{width:100%;min-height:120px;resize:vertical;border:1px solid var(--line);border-radius:14px;padding:.8rem;
+  background:var(--fill);color:var(--ink);font:inherit;outline:none}
+textarea:focus{border-color:var(--blue)}
+.send{display:inline-block;margin:.7rem .6rem 0 0;padding:.55rem 1.1rem;border-radius:99px;background:var(--blue);color:#fff;font-weight:600}
+.alt{display:inline-block;margin-top:.7rem;font-size:.85rem}
+.off{opacity:.45;pointer-events:none}
+@keyframes fi{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(8px)}}
+
+/* Écrans étroits ou bas : défilement autorisé */
+@media (max-width:1000px),(max-height:520px){
+  body{height:auto;min-height:100vh;overflow:auto}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}
+  .card{min-height:260px}
+  .c-situation,.c-prio,.c-att,.c-charge,.c-opp,.c-veille{grid-column:auto}
+  .c-prio,.c-charge{grid-column:1/-1}
+  .top{flex-wrap:wrap}
+}
+@media (max-width:620px){ .grid{grid-template-columns:1fr} .clock{display:none} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="hello"><h1 id="hi">Bonjour</h1><p id="date"></p></div>
+  <div class="tools">
+    <span class="state" id="state"><i></i><span>Données à jour</span></span>
+    <a class="btn" href="https://mail.google.com/" target="_blank" rel="noopener">Gmail</a>
+    <a class="btn" href="https://calendar.google.com/" target="_blank" rel="noopener">Agenda</a>
+    <button class="btn main" id="bi">Instruction à Claude <span class="badge" id="bb" hidden></span></button>
+    <span class="clock" id="clock"></span>
+  </div>
+</header>
+<main class="grid" id="grid"></main>
+<div id="ov" hidden><div class="sheet" role="dialog" aria-modal="true"><header><h3 id="mt"></h3><button class="x" id="mx" aria-label="Fermer">×</button></header><div class="body" id="mb"></div></div></div>
+
+<script src="app.js"></script>
+<script src="data-actions.js"></script>
+<script src="data-planning.js"></script>
+<script src="data-planning-mois.js"></script>
+<script src="data-planning-mois-suivant.js"></script>
+<script src="data-planning-annee.js"></script>
+<script src="data-attentes.js"></script>
+<script src="data-opportunites.js"></script>
+<script src="data-opportunites-cdi.js"></script>
+<script src="data-veille.js"></script>
+<script src="data-instructions.js"></script>
+<script>
+(() => {
+const W = window, $ = s => document.querySelector(s);
+const fr = n => String(Math.round(n * 10) / 10).replace(".", ",");
+const hh = n => fr(n) + " h";
+const sum = a => a.reduce((x, y) => x + y, 0);
+const short = u => String(u || "").replace(/\/\d{4}/, "");
+const lvl = {urgent: ["red", "Urgent"], high: ["orange", "Élevé"], norm: ["blue", "Normal"]};
+const ageCls = j => j > 7 ? "red" : j > 3 ? "orange" : "blue";
+const ageTxt = j => j === 0 ? "aujourd'hui" : j + " j";
+const ETAT = {recu: ["Reçue", "blue"], compris: ["Comprise", "blue"], execute: ["Exécutée", "green"], a_valider: ["À valider", "orange"], impossible: ["Impossible", "red"]};
+const sources = [];   // fraîcheur : { nom, u, maxH }
+
+function isStale(u, maxH) { const a = maxH ? ageOuvre(u) : null; return a !== null && a > maxH; }
+function fresh(u, maxH = 30) {
+  if (!u) return "";
+  const st = isStale(u, maxH);
+  return `<span class="fresh${st ? " stale" : ""}">${st ? "À actualiser · " : ""}${esc(short(u))}</span>`;
+}
+function reg(nom, u, maxH = 30) { if (u) sources.push({nom, u, maxH}); }
+function foot(u, maxH = 30) { return u ? `<div class="foot${isStale(u, maxH) ? " stale" : ""}">Données au ${esc(u)}${isStale(u, maxH) ? " · à actualiser" : ""}</div>` : ""; }
+const tag = (txt, c) => `<span class="pill ${c}">${esc(txt)}</span>`;
+
+const mods = {};      // modules : { id, cls, title, sub, body, u, maxH, modal() }
+const modals = {};
+
+/* ---------- Situation ---------- */
+function situation() {
+  const D = W.DATA; if (!D) return null;
+  const S = D.status, total = sum(Object.values(S));
+  const seg = (n, c) => `<i style="width:${100 * n / total}%;background:${c}"></i>`;
+  reg("Situation", D.updated);
+  modals.situation = () => ({title: "Situation", html: `
+    <div class="tiles">
+      <div class="tile red"><b>${D.priority.urgente}</b><span>Urgent</span></div>
+      <div class="tile orange"><b>${S.a_traiter}</b><span>À traiter</span></div>
+      <div class="tile blue"><b>${S.en_attente}</b><span>En attente</span></div>
+      <div class="tile green"><b>${D.relances_a_prevoir}</b><span>Relances à prévoir</span></div>
+    </div>
+    <div class="stack">${seg(S.a_traiter, "var(--orange)")}${seg(S.en_attente, "var(--blue)")}${seg(S.information, "var(--gray)")}${seg(S.termine, "var(--green)")}${seg(S.sans_action, "var(--fill)")}</div>
+    <div class="line"><span>À traiter</span><b>${S.a_traiter}</b></div>
+    <div class="line"><span>En attente</span><b>${S.en_attente}</b></div>
+    <div class="line"><span>Information</span><b>${S.information}</b></div>
+    <div class="line"><span>Terminé</span><b>${S.termine}</b></div>
+    <div class="line"><span>Sans action</span><b>${S.sans_action}</b></div>
+    <div class="line"><span>Priorité élevée</span><b>${D.priority.elevee}</b></div>
+    <div class="line"><span>Priorité normale</span><b>${D.priority.normale}</b></div>
+    <div class="line"><span>Sans nouvelle depuis plus de 3 jours</span><b>${D.sans_nouvelle_3j}</b></div>
+    <div class="line"><span>Prochain point de relance</span><b>${esc(D.prochain_point_relance)}</b></div>
+    ${foot(D.updated)}`});
+  return {id: "situation", cls: "c-situation", title: "Situation", sub: `${total} échanges`, u: D.updated, maxH: 30, body: `
+    <div class="tiles">
+      <div class="tile red"><b>${D.priority.urgente}</b><span>Urgent</span></div>
+      <div class="tile orange"><b>${S.a_traiter}</b><span>À traiter</span></div>
+      <div class="tile blue"><b>${S.en_attente}</b><span>En attente</span></div>
+      <div class="tile green"><b>${D.relances_a_prevoir}</b><span>Relances</span></div>
+    </div>
+    <div class="stack">${seg(S.a_traiter, "var(--orange)")}${seg(S.en_attente, "var(--blue)")}${seg(S.information, "var(--gray)")}${seg(S.termine, "var(--green)")}${seg(S.sans_action, "var(--fill)")}</div>
+    <div class="line"><span>Sans nouvelle depuis +3 j</span><b>${D.sans_nouvelle_3j}</b></div>
+    <div class="line"><span>Prochain point de relance</span><b>${esc(D.prochain_point_relance)}</b></div>`};
+}
+
+/* ---------- Priorités ---------- */
+function priorites() {
+  const D = W.DATA; if (!D) return null;
+  const P = D.priorites_du_jour || [];
+  modals.prio = () => ({title: "Priorités du jour", html: `<ul class="rows">${P.map(p => `
+    <li style="--c:var(--${lvl[p.level][0]})"><span class="dot"></span><span class="t">${esc(p.label)}</span>${tag(lvl[p.level][1], lvl[p.level][0])}</li>`).join("")}</ul>${foot(D.updated)}`});
+  return {id: "prio", cls: "c-prio", title: "Priorités du jour", sub: P.length ? `${P.length}` : "", u: D.updated, maxH: 30, fade: true,
+    body: P.length ? `<ul class="rows">${P.slice(0, 7).map(p => `
+    <li style="--c:var(--${lvl[p.level][0]})"><span class="dot"></span><span class="t">${esc(p.label)}</span>${tag(lvl[p.level][1], lvl[p.level][0])}</li>`).join("")}</ul>`
+      : `<p class="sub">Aucune priorité enregistrée.</p>`};
+}
+
+/* ---------- J'attends ---------- */
+function attentes() {
+  const D = W.DATA_ATTENTES; if (!D) return null;
+  const I = D.items || [];
+  modals.att = () => ({title: "J'attends", html: `<ul class="rows">${I.map(i => `
+    <li><span class="t">${esc(i.label)}${i.detail ? `<small>${esc(i.detail)}</small>` : ""}</span>${tag(ageTxt(i.jours), ageCls(i.jours))}</li>`).join("")}</ul>${foot(D.updated)}`});
+  reg("J'attends", D.updated);
+  return {id: "att", cls: "c-att", title: "J'attends", sub: `${I.length}`, u: D.updated, maxH: 30, fade: true,
+    body: I.length ? `<ul class="rows compact">${I.map(i => `
+    <li><span class="t">${esc(i.label)}</span>${tag(ageTxt(i.jours), ageCls(i.jours))}</li>`).join("")}</ul>` : `<p class="sub">Rien en attente.</p>`};
+}
+
+/* ---------- Opportunités ---------- */
+function opportunites() {
+  const F = W.DATA_OPPORTUNITES, C = W.DATA_OPPORTUNITES_CDI;
+  if (!F && !C) return null;
+  const items = [...(F ? F.items.map(i => ({...i, _t: "Formation"})) : []), ...(C ? C.items.map(i => ({...i, _t: "CDI"})) : [])];
+  const nb = s => items.filter(i => i.statut === s).length;
+  const cand = ((F && F.candidatures_en_cours) || 0) + ((C && C.candidatures_en_cours) || 0);
+  if (F) reg("Opportunités formation", F.updated);
+  if (C) reg("Opportunités CDI", C.updated);
+  const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
+  const bloc = (D, titre) => !D ? "" : `<h4>${titre} (${D.items.length})</h4>` +
+    (D.items.length ? D.items.map(i => `
+    <details><summary><span class="t">${esc(i.titre)}</span>${tag(i.statut, i.statut === "Nouvelle" ? "orange" : "blue")}</summary>
+      <dl>${row("Employeur", esc(i.employeur))}${row("Lieu", esc(i.lieu))}${row("Contrat", esc(i.contrat))}${row("Rémunération", esc(i.tarif))}
+      ${row("Publiée le", esc(i.publiee))}${row("Date limite", esc(i.limite))}${row("Repérée le", esc(i.repere))}
+      ${row("Annonce", `<a href="${esc(i.lien)}" target="_blank" rel="noopener">Ouvrir l'annonce</a>`)}</dl></details>`).join("") : `<p class="sub">Aucune offre vérifiée.</p>`) +
+    ((D.ecartees && D.ecartees.length) ? `<details><summary><span class="t">Écartées (${D.ecartees.length})</span></summary><dl>${D.ecartees.map(e => row(esc(e.label), esc(e.motif))).join("")}</dl></details>` : "") +
+    `<div class="foot">Dernière recherche ${esc(D.derniere_recherche)} · données au ${esc(D.updated)}</div>`;
+  modals.opp = () => ({title: "Opportunités", html: bloc(F, "Formation") + bloc(C, "CDI")});
+  const top = [...items].sort((a, b) => (b.statut === "Nouvelle") - (a.statut === "Nouvelle")).slice(0, 3);
+  const old = [F, C].filter(Boolean).map(d => d.updated).find(u => isStale(u, 30)) || (F || C).updated;
+  return {id: "opp", cls: "c-opp", title: "Opportunités", sub: `${items.length} offres`, u: old, maxH: 30, fade: true, body: `
+    <div class="tiles three">
+      <div class="tile orange"><b>${nb("Nouvelle")}</b><span>Nouvelles</span></div>
+      <div class="tile blue"><b>${nb("À étudier")}</b><span>À étudier</span></div>
+      <div class="tile green"><b>${cand}</b><span>Candidat.</span></div>
+    </div>
+    <ul class="rows compact" style="margin-top:.6rem">${top.map(i => `<li><span class="t">${esc(i.titre)}<small>${esc(i.employeur)} · ${i._t}</small></span></li>`).join("")}</ul>`};
+}
+
+/* ---------- Veille ---------- */
+function veille() {
+  const D = W.DATA_VEILLE; if (!D) return null;
+  const I = D.items || [];
+  const li = i => `<li style="--c:var(--red)">${i.important ? '<span class="dot"></span>' : ""}<span class="t"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.titre)}</a><small>${esc(i.theme)} · ${esc(i.date)}${i.note ? " · " + esc(i.note) : ""}</small></span></li>`;
+  modals.veille = () => ({title: "Veille métier", html: `<ul class="rows">${I.map(li).join("")}</ul>${foot(D.updated, 130)}`});
+  reg("Veille", D.updated, 130);
+  return {id: "veille", cls: "c-veille", title: "Veille", sub: `${I.length}`, u: D.updated, maxH: 130, fade: true,
+    body: `<ul class="rows compact">${I.slice(0, 4).map(li).join("")}</ul>`};
+}
+
+/* ---------- Charge (carte interactive) ---------- */
+let vue = "semaine";
+function vues() {
+  const V = {}, now = new Date(); now.setHours(0, 0, 0, 0);
+  const ti = (new Date().getDay() + 6) % 7;
+  if (W.DATA_PLANNING) V.semaine = {lib: "Semaine", u: W.DATA_PLANNING.updated, maxH: 30, titre: "Cette semaine",
+    bars: W.DATA_PLANNING.semaine.map((d, i) => ({l: d.jour, h: d.h, cur: i === ti}))};
+  const mois = (D, k) => {
+    const isCur = s => { const d = new Date(s.debut + "T00:00:00"), e = new Date(d); e.setDate(e.getDate() + 7); return now >= d && now < e; };
+    V[k] = {lib: D.mois, u: D.updated, maxH: 120, titre: D.mois, note: D.semaines.some(s => s.conflit) ? D.note_conflit : "",
+      bars: D.semaines.map(s => ({l: s.label, h: s.h, cur: isCur(s), alert: s.conflit}))};
+  };
+  if (W.DATA_PLANNING_MOIS) mois(W.DATA_PLANNING_MOIS, "mois");
+  if (W.DATA_PLANNING_MOIS_SUIVANT) mois(W.DATA_PLANNING_MOIS_SUIVANT, "suivant");
+  if (W.DATA_PLANNING_ANNEE) { const D = W.DATA_PLANNING_ANNEE;
+    V.annee = {lib: String(D.annee).slice(0, 4), u: D.updated, maxH: 0, titre: String(D.annee),
+      note: [D.mois.some(m => m.conflits) ? D.note_conflit : "", D.mois.some(m => m.partiel) ? D.note_partiel : ""].filter(Boolean).join(" · "),
+      bars: D.mois.map(m => ({l: m.label, h: m.h, alert: m.conflits, partiel: m.partiel}))}; }
+  return V;
+}
+function charge() {
+  const V = vues(), ks = Object.keys(V); if (!ks.length) return null;
+  Object.keys(V).forEach(k => reg("Charge · " + V[k].lib, V[k].u, V[k].maxH));
+  return {id: "charge", cls: "c-charge", custom: true};
+}
+function chargeHtml() {
+  const V = vues(), ks = Object.keys(V); if (!V[vue]) vue = ks[0];
+  const v = V[vue], max = Math.max(...v.bars.map(b => b.h), 1), dense = v.bars.length > 7;
+  return `
+  <div class="ch"><h2>Charge de travail</h2><div class="seg">${ks.map(k => `<button data-vue="${k}" class="${k === vue ? "on" : ""}">${esc(V[k].lib)}</button>`).join("")}</div></div>
+  <div class="cb">
+    <div class="total"><b>${hh(sum(v.bars.map(b => b.h)))}</b><span>${esc(v.titre)}</span></div>
+    <div class="bars${dense ? " dense" : ""}">${v.bars.map(b => `
+      <div class="col${b.cur ? " cur" : ""}${b.alert ? " alert" : ""}${b.partiel ? " partiel" : ""}">
+        <span class="v">${b.h ? fr(b.h) : "–"}</span>
+        <div class="track"><span style="flex:${max - b.h}"></span><i style="flex:${b.h}"></i></div>
+        <span class="l">${esc(b.l)}</span></div>`).join("")}</div>
+    ${v.note ? `<div class="note">${esc(v.note)}</div>` : ""}
+  </div>${fresh(v.u, v.maxH)}`;
+}
+
+/* ---------- Instructions ---------- */
+function instrModal() {
+  const D = W.DATA_INSTRUCTIONS || {items: [], updated: ""};
+  const I = (D.items || []).slice(0, 5);
+  return {title: "Instruction pour Claude", html: `
+    <textarea id="t" placeholder="Ex. : ne plus signaler tel e-mail…"></textarea>
+    <a id="b" class="send off" href="#" target="_blank" rel="noopener">Préparer l'e-mail</a>
+    <a id="m" class="alt off" href="#">Ou avec l'application de messagerie</a>
+    <p class="sub" style="margin:.7rem 0 0">Gmail s'ouvre pré-rempli : il reste à cliquer sur Envoyer.</p>
+    <h4>État des instructions</h4>
+    ${I.length ? `<ul class="rows">${I.map(i => { const e = ETAT[i.etat] || ETAT.recu; return `<li><span class="t">${esc(i.label)}${i.retour ? `<small>${esc(i.retour)}</small>` : ""}</span>${tag(e[0], e[1])}</li>`; }).join("")}</ul>` : `<p class="sub">Aucune instruction en cours.</p>`}
+    ${foot(D.updated, 0)}`};
+}
+function bindInstr() {
+  const TO = ["said.basaid.pro", "gmail.com"].join("@");   // adresse assemblée ici pour ne pas figurer en clair dans le code
+  const t = $("#t"), b = $("#b"), m = $("#m");
+  const maj = () => {
+    const txt = t.value.trim(), d = new Date().toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"});
+    const su = encodeURIComponent("[CLAUDE] consigne du " + d), body = encodeURIComponent(txt);
+    b.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(TO) + "&su=" + su + "&body=" + body;
+    m.href = "mailto:" + TO + "?subject=" + su + "&body=" + body;
+    b.classList.toggle("off", !txt); m.classList.toggle("off", !txt);
+  };
+  t.addEventListener("input", maj); maj(); t.focus();
+}
+
+/* ---------- Assemblage ---------- */
+const grid = $("#grid");
+[situation, priorites, attentes, charge, opportunites, veille].forEach(fn => {
+  let m = null;
+  try { m = fn(); } catch (e) { console.error(fn.name, e); }
+  if (!m) return;
+  const sec = document.createElement("section");
+  sec.className = "card " + m.cls;
+  if (m.custom) { sec.id = "carte-charge"; sec.innerHTML = chargeHtml(); }
+  else {
+    if (modals[m.id]) { sec.dataset.open = m.id; sec.tabIndex = 0; sec.setAttribute("role", "button"); }
+    sec.innerHTML = `<div class="ch"><h2>${m.title}</h2>${m.sub ? `<span class="sub">${m.sub}</span>` : ""}</div><div class="cb${m.fade ? " fade" : ""}">${m.body}</div>${fresh(m.u, m.maxH)}`;
+  }
+  grid.appendChild(sec);
+});
+$("#carte-charge") && $("#carte-charge").addEventListener("click", e => {
+  const b = e.target.closest("[data-vue]"); if (!b) return;
+  vue = b.dataset.vue; $("#carte-charge").innerHTML = chargeHtml();
+});
+
+/* ---------- Fenêtre de détail ---------- */
+const ov = $("#ov");
+function ouvrir(m, instr) { $("#mt").textContent = m.title; $("#mb").innerHTML = m.html; ov.hidden = false; $("#mb").scrollTop = 0; if (instr) bindInstr(); }
+function fermer() { ov.hidden = true; }
+document.addEventListener("click", e => {
+  if (e.target === ov || e.target.closest("#mx")) return fermer();
+  if (e.target.closest("a,button,summary,textarea")) return;
+  const c = e.target.closest("[data-open]"); if (c && modals[c.dataset.open]) ouvrir(modals[c.dataset.open]());
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") fermer();
+  if ((e.key === "Enter" || e.key === " ") && document.activeElement && document.activeElement.dataset && document.activeElement.dataset.open) { e.preventDefault(); ouvrir(modals[document.activeElement.dataset.open]()); }
+});
+$("#bi").addEventListener("click", () => ouvrir(instrModal(), true));
+const nbv = ((W.DATA_INSTRUCTIONS && W.DATA_INSTRUCTIONS.items) || []).filter(i => i.etat === "a_valider").length;
+if (nbv) { $("#bb").hidden = false; $("#bb").textContent = nbv; }
+
+/* ---------- En-tête : salutation, date, heure, état des données ---------- */
+function tick() {
+  const n = new Date(), h = n.getHours();
+  $("#hi").textContent = h < 5 ? "Bonne nuit" : h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+  const d = n.toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long", year: "numeric"});
+  $("#date").textContent = d.charAt(0).toUpperCase() + d.slice(1);
+  $("#clock").textContent = n.toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
+}
+tick(); setInterval(tick, 15000);
+const vieux = [...new Set(sources.filter(s => isStale(s.u, s.maxH)).map(s => s.nom))];
+if (vieux.length) { const s = $("#state"); s.classList.add("warn"); s.querySelector("span").textContent = "À actualiser : " + vieux.slice(0, 2).join(", ") + (vieux.length > 2 ? " +" + (vieux.length - 2) : ""); s.title = vieux.join(", "); }
+/* Rechargement automatique toutes les 30 min, sauf fenêtre ouverte. */
+setInterval(() => { if (ov.hidden) location.reload(); }, 30 * 60 * 1000);
+})();
+</script>
+</body>
+</html>
