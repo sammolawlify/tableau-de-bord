@@ -70,7 +70,7 @@ a{color:var(--blue);text-decoration:none}
 .card[data-open]{cursor:pointer}
 .card[data-open]:hover{transform:translateY(-3px);box-shadow:0 1px 1px rgba(0,0,0,.03),0 18px 40px rgba(0,0,0,.12)}
 .card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.c-situation{grid-column:1/4;grid-row:1}.c-prio{grid-column:4/7;grid-row:1}.c-att{grid-column:7/10;grid-row:1}.c-agenda{grid-column:10/13;grid-row:1}
+.c-situation{grid-column:1/4;grid-row:1}.c-prio{grid-column:4/7;grid-row:1}.c-att{grid-column:7/10;grid-row:1}.c-appr{grid-column:10/13;grid-row:1}
 .c-charge{grid-column:1/7;grid-row:2}.c-opp{grid-column:7/10;grid-row:2}.c-veille{grid-column:10/13;grid-row:2}
 .ch{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:.7rem;flex:none}
 .ch h2{white-space:nowrap;margin:0;font-size:1.05rem;font-weight:650;letter-spacing:-.01em}
@@ -113,6 +113,17 @@ a{color:var(--blue);text-decoration:none}
 .rows.compact a:hover{text-decoration:underline}
 .red{--c:var(--red)}.orange{--c:var(--orange)}.blue{--c:var(--blue)}.green{--c:var(--green)}
 
+/* Apprentis */
+.ap{margin-bottom:.75rem}
+.ap .h{display:flex;justify-content:space-between;align-items:baseline;font-size:.86rem;font-weight:600}
+.ap .h span{font-size:.74rem;font-weight:500;color:var(--muted)}
+.ap .pb{height:7px;border-radius:99px;background:var(--fill);margin:.3rem 0 .25rem;overflow:hidden;display:flex}
+.ap .pb i{display:block;background:var(--blue)}
+.ap .pb i+i{background:var(--green)}
+.ap .m{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted)}
+.ap .m b{font-weight:600;color:var(--ink)}
+.ap .m .late{color:var(--red)}
+.ap-al{font-size:.76rem;color:var(--orange);margin-top:.15rem}
 /* Agenda */
 .cb h4.ag{margin:.1rem 0 .25rem;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
 .cb h4.ag + .rows,.cb h4.ag + p{margin-bottom:.7rem}
@@ -174,7 +185,7 @@ a{color:var(--blue);text-decoration:none}
   body{height:auto;min-height:100vh;overflow:auto}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}
   .card{min-height:260px}
-  .c-situation,.c-prio,.c-agenda,.c-att,.c-charge,.c-opp,.c-veille{grid-column:auto;grid-row:auto}
+  .c-situation,.c-prio,.c-appr,.c-att,.c-charge,.c-opp,.c-veille{grid-column:auto;grid-row:auto}
   .c-prio,.c-charge{grid-column:1/-1}
   .top{flex-wrap:wrap}
 }
@@ -201,7 +212,7 @@ a{color:var(--blue);text-decoration:none}
 <script src="data-planning-mois.js"></script>
 <script src="data-planning-mois-suivant.js"></script>
 <script src="data-planning-annee.js"></script>
-<script src="data-agenda.js"></script>
+<script src="data-apprentis.js"></script>
 <script src="data-attentes.js"></script>
 <script src="data-opportunites.js"></script>
 <script src="data-opportunites-cdi.js"></script>
@@ -285,20 +296,24 @@ function priorites() {
     body: P.length ? `<ul class="rows">${tri.slice(0, 7).map(li).join("")}</ul>` : `<p class="sub">Aucune priorité enregistrée.</p>`};
 }
 
-/* ---------- Agenda (aujourd'hui et demain) ---------- */
-function agenda() {
-  const D = W.DATA_AGENDA; if (!D) return null;
-  const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  const n = new Date(), t = new Date(n); t.setDate(t.getDate() + 1);
-  const hm = String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
-  const wd = d => d.toLocaleDateString("fr-FR", {weekday: "short", day: "numeric"});
-  const bloc = (lib, d) => {
-    const j = (D.jours || []).find(x => x.date === iso(d));
-    return `<h4 class="ag">${lib}<span>${esc(wd(d))}</span></h4>` + (!j ? `<p class="sub">Non synchronisé.</p>` : !j.events.length ? `<p class="sub">Rien de prévu.</p>` :
-      `<ul class="rows ag">${j.events.map(e => `<li class="${lib === "Aujourd'hui" && e.debut <= hm && hm < e.fin ? "live" : ""}"><b>${esc(e.debut)}–${esc(e.fin)}</b><span class="t">${esc(e.label)}</span></li>`).join("")}</ul>`);
+/* ---------- Apprentis ---------- */
+function apprentis() {
+  const D = W.DATA_APPRENTIS; if (!D) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const bloc = f => {
+    const fait = Math.max(f.echange, f.visite), pc = 100 * f.contactes / f.total, pf = 100 * fait / f.total;
+    let ech = esc(f.jalon || "Échéance à communiquer"), cls = "";
+    if (f.echeance) {
+      const j = Math.round((new Date(f.echeance + "T00:00:00") - today) / 864e5);
+      ech = `${esc(f.jalon)} · ${j >= 0 ? "J-" + j : "dépassé"}`; if (j <= 14 && fait < f.total) cls = "late";
+    }
+    return `<div class="ap"><div class="h">${esc(f.nom)}<span>${f.contactes}/${f.total} contactés</span></div>
+      <div class="pb"><i style="width:${pc - pf}%"></i><i style="width:${pf}%"></i></div>
+      <div class="m"><span>Échanges <b>${fait}/${f.total}</b> · Visites <b>${f.visite}/${f.total}</b></span><span class="${cls}">${ech}</span></div></div>`;
   };
-  reg("Agenda", D.updated);
-  return {id: "agenda", cls: "c-agenda", title: "Agenda", sub: "aujourd'hui · demain", u: D.updated, maxH: 30, body: bloc("Aujourd'hui", n) + bloc("Demain", t)};
+  reg("Apprentis", D.updated);
+  return {id: "apprentis", cls: "c-appr", title: "Apprentis", sub: `${sum(D.filieres.map(f => f.total))} suivis`, u: D.updated, maxH: 120,
+    body: D.filieres.map(bloc).join("") + (D.alertes || []).map(a => `<div class="ap-al">⚠ ${esc(a)}</div>`).join("")};
 }
 
 /* ---------- J'attends ---------- */
@@ -420,7 +435,7 @@ function chargeHtml() {
 
 /* ---------- Assemblage ---------- */
 const grid = $("#grid");
-[situation, priorites, agenda, attentes, charge, opportunites, veille].forEach(fn => {
+[situation, priorites, apprentis, attentes, charge, opportunites, veille].forEach(fn => {
   let m = null;
   try { m = fn(); } catch (e) { console.error(fn.name, e); }
   if (!m) return;
